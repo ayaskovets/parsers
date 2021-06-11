@@ -2,8 +2,10 @@
 
 module EParser where
 
-import Control.Applicative ( Alternative((<|>), empty, some) )
+import Control.Applicative ( Alternative((<|>), empty, many) )
+import Control.Monad ( replicateM )
 import Data.List ( isPrefixOf )
+import Data.Char ( isAlpha, isDigit )
 
 type ParserError = String
 newtype Parser a = Parser
@@ -38,18 +40,34 @@ instance Alternative Parser where
 
 -- General parsing utilities
 satisfy :: (Char -> Bool) -> ParserError -> Parser Char
-satisfy f e = Parser (\(s:ss) -> if f s
-                                 then (Right s, ss)
-                                 else (Left e, s:ss))
+satisfy f e = Parser (\s -> case s of
+                            [] -> (Left e, s)
+                            _  -> if f (head s)
+                                  then (Right (head s), tail s)
+                                  else (Left e, s))
 
-try :: Parser a -> Parser a
-try p = Parser (\s -> case parse p s of
-                      (Left e, _)   -> (Left e, s)
-                      (Right r, ss) -> (Right r, ss))
+count :: Int -> Parser a -> Parser [a]
+count n p | n <= 0 = return []
+          | otherwise = replicateM n p
 
-sepBy = undefined
+sepBy :: Parser a -> Parser sep -> Parser [a]
+sepBy p sep = sepBy1 p sep <|> return []
 
-between = undefined
+sepBy1 :: Parser a -> Parser sep -> Parser [a]
+sepBy1 p sep = do
+    r  <- p
+    rs <- many (sep >> p)
+    return (r:rs)
+
+between :: Parser open -> Parser close -> Parser a -> Parser a
+between open close p = do
+    _ <- open
+    p <* close
+
+eof :: Parser ()
+eof = Parser (\s -> case s of
+                    [] -> (Right (), [])
+                    _  -> (Left [], s))
 
 -- Specific patterns
 char :: Char -> Parser Char
@@ -64,17 +82,23 @@ string x = Parser (\s -> if x `isPrefixOf` s
                          else (Left x, s))
 
 -- Specific characters and sequences
+letter :: Parser Char
+letter = satisfy isAlpha "letter"
+
+digit :: Parser Char
+digit = satisfy isDigit "digit"
+
 space :: Parser Char
 space = char ' '
 
 tab :: Parser Char
 tab = char '\t'
 
-newline :: Parser String
-newline = some $ char '\n' <|> char '\r'
+newline :: Parser Char
+newline = char '\n'
 
 quote :: Parser Char
-quote = char '"' <|> char '\''
+quote = char '\''
 
-eof :: Parser ()
-eof = undefined
+doubleQuote :: Parser Char
+doubleQuote = char '"'
