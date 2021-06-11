@@ -46,23 +46,32 @@ satisfy f e = Parser (\s -> case s of
                                   then (Right (head s), tail s)
                                   else (Left e, s))
 
+try :: Parser a -> Parser a
+try p = Parser (\s -> case parse p s of
+                      (Left e, _)   -> (Left e, s)
+                      (Right r, s') -> (Right r, s'))
+
+oneOf :: [Char] -> Parser Char
+oneOf list = satisfy (`elem` list) (show list)
+
 count :: Int -> Parser a -> Parser [a]
 count n p | n <= 0 = return []
           | otherwise = replicateM n p
 
-sepBy :: Parser a -> Parser sep -> Parser [a]
-sepBy p sep = sepBy1 p sep <|> return []
+exclude :: Char -> Parser Char
+exclude c = satisfy (/=c) ("!" ++ [c])
 
-sepBy1 :: Parser a -> Parser sep -> Parser [a]
-sepBy1 p sep = do
+sepBy :: Parser a -> Parser sep -> Parser [a]
+sepBy p sep = (do
     r  <- p
     rs <- many (sep >> p)
-    return (r:rs)
+    return (r:rs)) <|> return []
+
+endBy :: Parser a -> Parser sep -> Parser [a]
+endBy p sep = many (p <* sep)
 
 between :: Parser open -> Parser close -> Parser a -> Parser a
-between open close p = do
-    _ <- open
-    p <* close
+between open close p = open *> p <* close
 
 eof :: Parser ()
 eof = Parser (\s -> case s of
@@ -88,17 +97,56 @@ letter = satisfy isAlpha "letter"
 digit :: Parser Char
 digit = satisfy isDigit "digit"
 
+minus :: Parser Char
+minus = char '-'
+
+plus :: Parser Char
+plus = char '+'
+
+comma :: Parser Char
+comma = char ','
+
+dot :: Parser Char
+dot = char '.'
+
+colon :: Parser Char
+colon = char ':'
+
+semicolon :: Parser Char
+semicolon = char ';'
+
 space :: Parser Char
 space = char ' '
 
 tab :: Parser Char
 tab = char '\t'
 
-newline :: Parser Char
-newline = char '\n'
+cr :: Parser Char
+cr = char '\r'
+
+lf :: Parser Char
+lf = char '\n'
 
 quote :: Parser Char
 quote = char '\''
 
-doubleQuote :: Parser Char
-doubleQuote = char '"'
+quotes :: Parser a -> Parser a
+quotes = between quote quote
+
+dquote :: Parser Char
+dquote = char '"'
+
+dquotes :: Parser a -> Parser a
+dquotes = between dquote dquote
+
+braces :: Parser a -> Parser a
+braces = between (char '{') (char '}')
+
+brackets :: Parser a -> Parser a
+brackets = between (char '[') (char ']')
+
+parens :: Parser a -> Parser a
+parens = between (char '(') (char ')')
+
+tag :: Parser a -> Parser a
+tag = between (char '<') (char '>')
