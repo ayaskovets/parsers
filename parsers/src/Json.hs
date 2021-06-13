@@ -8,8 +8,8 @@ import Parser
       dot,
       minus,
       oneOf,
+      notChar,
       digit,
-      exclude,
       char,
       string,
       dquotes,
@@ -69,7 +69,7 @@ jCharacters :: Parser String
 jCharacters = many jCharacter
 
 jCharacter :: Parser Char
-jCharacter = (string "\\" >>= const (char '"')) <|> exclude '"'
+jCharacter = (string "\\" >>= const (char '"')) <|> notChar '"'
 
 jFloat :: Parser JValue
 jFloat = do
