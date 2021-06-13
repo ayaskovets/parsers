@@ -1,4 +1,4 @@
-module Json ( json ) where
+module Json ( JValue, json ) where
 
 import Parser
     ( cr,
@@ -21,9 +21,10 @@ import Parser
       eof,
       Parser )
 import Control.Applicative ( (<|>), Alternative (some, many) )
+import Data.Map ( Map, fromList )
 
 data JValue
-    = JObject [(String, JValue)]
+    = JObject (Map String JValue)
     | JArray [JValue]
     | JString String
     | JFloat Float
@@ -41,7 +42,7 @@ jValue :: Parser JValue
 jValue = jObject <|> jArray <|> (JString <$> jString) <|> jFloat <|> jInt <|> jBool <|> jNull
 
 jObject :: Parser JValue
-jObject = JObject <$> braces (jMembers <* jWs)
+jObject = JObject . fromList <$> braces (jMembers <* jWs)
 
 jMembers :: Parser [(String, JValue)]
 jMembers = jMember `sepBy` comma
