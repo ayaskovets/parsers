@@ -36,7 +36,7 @@ instance Alternative Parser where
                                  Right _ -> (r1, s1)
                                  Left e1 -> case r2 of
                                             Right _ -> (r2, s2)
-                                            Left e2 -> (Left (e1 ++ "|" ++ e2), s2))
+                                            Left e2 -> (Left (e1 ++ "|" ++ e2), s))
 
 -- General parsing utilities
 satisfy :: (Char -> Bool) -> ParserError -> Parser Char
@@ -55,7 +55,7 @@ oneOf :: [Char] -> Parser Char
 oneOf list = satisfy (`elem` list) (show list)
 
 count :: Int -> Parser a -> Parser [a]
-count n p | n <= 0 = return []
+count n p | n <= 0    = return []
           | otherwise = replicateM n p
 
 exclude :: Char -> Parser Char
@@ -75,8 +75,8 @@ between open close p = open *> p <* close
 
 eof :: Parser ()
 eof = Parser (\s -> case s of
-                    [] -> (Right (), [])
-                    _  -> (Left [], s))
+                    [] -> (Right (), "")
+                    _  -> (Left "EOF", s))
 
 -- Specific patterns
 char :: Char -> Parser Char
