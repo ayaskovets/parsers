@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module EParser where
+module Parser where
 
 import Control.Applicative ( Alternative((<|>), empty, many) )
 import Control.Monad ( replicateM )

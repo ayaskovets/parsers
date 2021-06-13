@@ -1,6 +1,6 @@
-module EJson (json) where
+module Json (json) where
 
-import EParser
+import Parser
     ( cr,
       lf,
       tab,
