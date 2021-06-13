@@ -5,7 +5,7 @@ module Parser where
 import Control.Applicative ( Alternative((<|>), empty, many) )
 import Control.Monad ( replicateM )
 import Data.List ( isPrefixOf )
-import Data.Char ( isAlpha, isDigit )
+import Data.Char ( isAlpha, isDigit, isAlphaNum )
 
 type ParserError = String
 newtype Parser a = Parser
@@ -54,18 +54,28 @@ try p = Parser (\s -> case parse p s of
 oneOf :: [Char] -> Parser Char
 oneOf list = satisfy (`elem` list) (show list)
 
+noneOf :: [Char] -> Parser Char
+noneOf list = satisfy (`notElem` list) ('!':show list)
+
 count :: Int -> Parser a -> Parser [a]
 count n p | n <= 0    = return []
           | otherwise = replicateM n p
 
-exclude :: Char -> Parser Char
-exclude c = satisfy (/=c) ("!" ++ [c])
+exclude :: (Show a, Eq a) => Parser a -> [a] -> Parser a
+exclude p ex = Parser (\s -> case parse p s of
+                             (Right r, s') -> if r `elem` ex
+                                              then (Left (show r ++ "!(" ++ show ex ++ ")"), s)
+                                              else (Right r, s')
+                             err           -> err)
 
 sepBy :: Parser a -> Parser sep -> Parser [a]
-sepBy p sep = (do
+sepBy p sep = sepBy1 p sep <|> return []
+
+sepBy1 :: Parser a -> Parser sep -> Parser [a]
+sepBy1 p sep = do
     r  <- p
     rs <- many (sep >> p)
-    return (r:rs)) <|> return []
+    return (r:rs)
 
 endBy :: Parser a -> Parser sep -> Parser [a]
 endBy p sep = many (p <* sep)
@@ -83,7 +93,10 @@ char :: Char -> Parser Char
 char x = satisfy (==x) [x]
 
 anyChar :: Parser Char
-anyChar = satisfy (const True) []
+anyChar = satisfy (const True) "anyChar"
+
+notChar :: Char -> Parser Char
+notChar x = satisfy (/=x) ('!':[x])
 
 string :: String -> Parser String
 string x = Parser (\s -> if x `isPrefixOf` s
@@ -96,6 +109,9 @@ letter = satisfy isAlpha "letter"
 
 digit :: Parser Char
 digit = satisfy isDigit "digit"
+
+alphaNum :: Parser Char
+alphaNum = satisfy isAlphaNum "alphaNum"
 
 minus :: Parser Char
 minus = char '-'
