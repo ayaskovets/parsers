@@ -1,4 +1,4 @@
-module Json (json) where
+module Json ( json ) where
 
 import Parser
     ( cr,
