@@ -36,7 +36,8 @@ instance Alternative Parser where
                                  Right _ -> (r1, s1)
                                  Left e1 -> case r2 of
                                             Right _ -> (r2, s2)
-                                            Left e2 -> (Left (e1 ++ "|" ++ e2), s))
+                                            Left e2 -> (Left (e1 ++ "|" ++ e2), s2))
+                                            -- for now s2, TODO implement (Index, String) state
 
 -- General parsing utilities
 satisfy :: (Char -> Bool) -> ParserError -> Parser Char
@@ -45,11 +46,6 @@ satisfy f e = Parser (\s -> case s of
                             _  -> if f (head s)
                                   then (Right (head s), tail s)
                                   else (Left e, s))
-
-try :: Parser a -> Parser a
-try p = Parser (\s -> case parse p s of
-                      (Left e, _)   -> (Left e, s)
-                      (Right r, s') -> (Right r, s'))
 
 oneOf :: [Char] -> Parser Char
 oneOf list = satisfy (`elem` list) (show list)
@@ -171,6 +167,3 @@ brackets = between (char '[') (char ']')
 
 parens :: Parser a -> Parser a
 parens = between (char '(') (char ')')
-
-tag :: Parser a -> Parser a
-tag = between (char '<') (char '>')
