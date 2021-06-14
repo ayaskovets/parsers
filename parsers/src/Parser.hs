@@ -103,6 +103,14 @@ string x = Parser (\s -> if x `isPrefixOf` s
                          then (Right x, drop (length x) s)
                          else (Left x, s))
 
+notString :: String -> Parser String
+notString x = Parser (\s -> let r = go x s
+                            in (Right r, drop (length r) s))
+    where go :: String -> String -> String
+          go _ ""     = ""
+          go "" s     = s
+          go a (b:bs) = if a `isPrefixOf` (b:bs) then "" else b:go a bs
+
 -- Specific characters and sequences
 letter :: Parser Char
 letter = satisfy isAlpha "letter"
